@@ -1,0 +1,9 @@
+copy 'codeforces_vs_addin.AddIn' and 'codeforces_vs_addin.dll' to :
+
+C:\Users\CURRENT_USER\Documents\Visual Studio 2012\Addins => for visual studio 2012
+
+C:\Users\CURRENT_USER\Documents\Visual Studio 2012\Addins => for visual studio 2013
+
+(CURRENT_USER == your windows account) (note : if the 'Addins' folder dos not exits , create it yourself !) and done !
+
+codeforces plugin is accessable from => options->codeforces_vs_addin

@@ -30,6 +30,7 @@ namespace codeforces_vs_addin
             InitializeComponent();
             Instance = this;
         }
+
     }
 
     public class ContestsViewModel : IViewModel
@@ -128,7 +129,7 @@ namespace codeforces_vs_addin
                         var col = ProblemsViewModel.Instance.Problems;
                         col.Clear();
                         for (int i = 0; i < probs.Count; ++i)
-                            col.Add(new ProblemCdt(probs[i],c));
+                            col.Add(new ProblemCdt(probs[i], c));
                     }
                     catch (Exception e)
                     {
@@ -190,7 +191,7 @@ namespace codeforces_vs_addin
     {
         public Contest c;
         public Problem p;
-        public ProblemCdt(Problem problem,Contest contest)
+        public ProblemCdt(Problem problem, Contest contest)
         {
             p = problem;
             c = contest;
@@ -218,7 +219,9 @@ namespace codeforces_vs_addin
                     if (pi.Name == p.Name.SafePath())
                         pi.Remove();
 
-                string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + ".cpp");
+
+                string extension = Database.Instance.language == "C#" ? ".cs" : ".cpp";
+                string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + extension);
                 StreamWriter sw = new StreamWriter(cpp, false);
                 WriteTemplate(sw);
                 sw.Close();
@@ -234,20 +237,23 @@ namespace codeforces_vs_addin
                 try
                 {
                     browser = "chrome";
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("chrome.exe",c.Url + "/problem/" + p.Name.First()));
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("chrome.exe", c.Url + "/problem/" + p.Name.First()));
                 }
                 catch (Exception e)
                 {
                     ProblemsViewModel.Instance.Status = e.Message;
-                    try{
+                    try
+                    {
                         browser = "ie";
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe",c.Url + "/problem/" + p.Name.First()));
-                    }catch(Exception e2){
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", c.Url + "/problem/" + p.Name.First()));
+                    }
+                    catch (Exception e2)
+                    {
                         ProblemsViewModel.Instance.Status = e2.Message;
                         exception_accured = true;
                     }
                 }
-                if(!exception_accured)
+                if (!exception_accured)
                     ProblemsViewModel.Instance.Status = p.Name + " launched in " + browser + " .";
             });
         }
@@ -271,9 +277,26 @@ namespace codeforces_vs_addin
                 }
             }
 
-            if(!ok) // write default template !
+            if (!ok) // write default template !
             {
-                sw.WriteLine(@"#include <functional>
+                if (Database.Instance.language == "C#")
+                {
+                    #region cstemplate
+                    sw.WriteLine(@"using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Numerics;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.IO;");
+                    #endregion
+                }
+                else
+                {
+                    #region cpptemplate
+                    sw.WriteLine(@"#include <functional>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -294,9 +317,48 @@ namespace codeforces_vs_addin
 #define repe(i,m,n) for(int i=(m), _end =(n);i <= _end;++i)
 typedef long long ll;
 using namespace std;");
+                    #endregion
+                }
             }
+            if (Database.Instance.language == "C#")
+            {
+                #region cscode
+                sw.WriteLine(@"public class CodeForces
+{
+#if TEST
+// To set this go to Project -> Properties -> Build -> General -> Conditional compilation symbols: -> enter 'TEST' into text box.
+const bool testing = true;
+#else
+const bool testing = false;
+#endif
 
-            sw.WriteLine(@"#ifdef ONLINE_JUDGE
+static void program(TextReader input) {
+	
+}
+
+public static void Main(string[] args){
+	if(!testing){ // set testing to false when submiting to codeforces
+		program(Console.In); // write your program in 'program' function (its your new main !)
+		return;
+	}
+");
+                for (int i = 0; i < p.TestCases.Count; ++i)
+                {
+                    TestCase tc = p.TestCases[i];
+                    sw.WriteLine("Console.WriteLine(\"Test Case({0}) => expected :\");", i + 1);
+                    sw.WriteLine("Console.WriteLine(\"{0}\");", tc.Output);
+                    sw.WriteLine("Console.WriteLine(\"Test Case({0}) => found    :\");", i + 1);
+                    sw.WriteLine("program(new StringReader(\"{0}\"));", tc.Input);
+                    sw.WriteLine("Console.WriteLine();");
+                    sw.WriteLine();
+                }
+                sw.WriteLine("}"); sw.WriteLine("}");
+                #endregion
+            }
+            else
+            {
+                #region cppcode
+                sw.WriteLine(@"#ifdef ONLINE_JUDGE
 const bool testing = false;
 #else
 const bool testing = true;
@@ -313,22 +375,24 @@ int main(){
 	}
 	
 	FILE* fin = NULL;");
-            for(int i = 0; i < p.TestCases.Count; ++i)
-            {
-                TestCase tc = p.TestCases[i];
-                sw.WriteLine("\tfin = fopen(\"in.txt\", \"w+\");");
-                sw.WriteLine("\tfprintf(fin, \"{0}\");", tc.Input);
-                sw.WriteLine("\tfclose(fin);");
-                sw.WriteLine("\tfreopen(\"in.txt\", \"r\", stdin);");
-                sw.WriteLine("\tprintf(\"test case({0}) => expected : \\n\");", i + 1);
-                sw.WriteLine("\tprintf(\"{0}\");", tc.Output);
-                sw.WriteLine("\tprintf(\"test case({0}) => founded  : \\n\");", i + 1);
-                sw.WriteLine("\tprogram();");
-            }
+                for (int i = 0; i < p.TestCases.Count; ++i)
+                {
+                    TestCase tc = p.TestCases[i];
+                    sw.WriteLine("\tfin = fopen(\"in.txt\", \"w+\");");
+                    sw.WriteLine("\tfprintf(fin, \"{0}\");", tc.Input);
+                    sw.WriteLine("\tfclose(fin);");
+                    sw.WriteLine("\tfreopen(\"in.txt\", \"r\", stdin);");
+                    sw.WriteLine("\tprintf(\"test case({0}) => expected : \\n\");", i + 1);
+                    sw.WriteLine("\tprintf(\"{0}\");", tc.Output);
+                    sw.WriteLine("\tprintf(\"test case({0}) => founded  : \\n\");", i + 1);
+                    sw.WriteLine("\tprogram();");
+                }
 
-            sw.WriteLine();
-            sw.WriteLine("\treturn 0;");
-            sw.WriteLine("}");
+                sw.WriteLine();
+                sw.WriteLine("\treturn 0;");
+                sw.WriteLine("}");
+                #endregion
+            }
         }
 
         public string Name
@@ -357,7 +421,7 @@ int main(){
                 return System.IO.Path.Combine(path, "codeforces_vs_addin_template.txt");
             }
         }
-        
+
 
         public CodeTemplateViewModel()
         {
@@ -484,6 +548,11 @@ int main(){
         {
             get { return db.Password; }
             set { db.Password = value; Notify("Password"); }
+        }
+
+        public ComboBoxItem Language
+        {
+            set { db.language = value.Content.ToString(); }
         }
 
         public bool UseCredentials
@@ -637,6 +706,8 @@ int main(){
         public string path = System.IO.Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"Visual Studio 2012\Addins");
 
         public static Database Instance = new Database();
+
+        public string language = "C++";
 
         private Database()
         {
@@ -801,7 +872,7 @@ int main(){
 
             foreach (Project project in dte2.Solution.Projects)
             {
-               
+
                 if (project.UniqueName.EndsWith(".csproj"))
                 {
                     newfiles = GetFilesNotInProject(project);
@@ -847,7 +918,8 @@ int main(){
 
         public static string SafePath(this string path)
         {
-            foreach (var c in System.IO.Path.GetInvalidFileNameChars()) {
+            foreach (var c in System.IO.Path.GetInvalidFileNameChars())
+            {
                 path = path.Replace(c, '-');
             }
             return path;

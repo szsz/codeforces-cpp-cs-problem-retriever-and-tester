@@ -23,7 +23,14 @@
                 <Border Height="1" Background="Black"  Margin="10,10,10,10"/>
             </StackPanel>
             <StackPanel DataContext="{StaticResource db}">
-                <TextBlock Text="{Binding LastError}" Foreground="Red" />
+                <TextBlock Foreground="Red" ><Run Text=" "/><InlineUIContainer>
+                		<Label Content="Language: "/>
+                	</InlineUIContainer><InlineUIContainer>
+                		<ComboBox Width="120" SelectedItem="{Binding Language, Mode=OneWayToSource}" SelectedIndex="0" >                            
+                            <ComboBoxItem Name="lngcpp">C++</ComboBoxItem>
+                            <ComboBoxItem Name="lngcs">C#</ComboBoxItem>
+                        </ComboBox>                    
+                	</InlineUIContainer></TextBlock>
                 <DockPanel>
                     <CheckBox Width="70" IsChecked="{Binding UseProxy,Mode=TwoWay}" DockPanel.Dock="Left" Name="use_proxy_chk"/>
                     <TextBlock TextTrimming="CharacterEllipsis"> use proxy ?</TextBlock>
