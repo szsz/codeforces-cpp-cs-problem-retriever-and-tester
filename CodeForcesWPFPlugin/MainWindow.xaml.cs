@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,22 +12,26 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Windows.Threading;
-using EnvDTE;
-using EnvDTE80;
+using System.IO;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Net;
 
-namespace codeforces_vs_addin
+namespace CodeForcesWPFPlugin
 {
-    public partial class Menu : UserControl
+
+    public partial class MainWindow : Window
     {
-        public static Menu Instance;
-        public Menu()
+        public static MainWindow Instance;
+        public MainWindow()
         {
             InitializeComponent();
             Instance = this;
         }
 
     }
+
+
 
     public class ContestsViewModel : IViewModel
     {
@@ -42,7 +42,7 @@ namespace codeforces_vs_addin
             Contests = new ObservableCollection<ContestCdt>();
             CheckCommand = new IDelegateCommand((obj) =>
             {
-                Menu.Instance.Dispatcher.InvokeAsync(() =>
+                MainWindow.Instance.Dispatcher.InvokeAsync(() =>
                 {
                     Status = "checking contests ...";
                     CheckBtnContent = "checking ...";
@@ -117,7 +117,7 @@ namespace codeforces_vs_addin
             c = contest;
             CheckCommand = new IDelegateCommand((object obj) =>
             {
-                Menu.Instance.Dispatcher.InvokeAsync(() =>
+                MainWindow.Instance.Dispatcher.InvokeAsync(() =>
                 {
                     var cs = ContestsViewModel.Instance;
                     cs.Status = "checking for problems ...";
@@ -198,35 +198,39 @@ namespace codeforces_vs_addin
 
             GenerateCommand = new IDelegateCommand((obj) =>
             {
-                var app = Connect.applicationObject;
+                //var app = Connect.applicationObject;
                 var ps = ProblemsViewModel.Instance;
-                var proj = app.GetActiveProject();
-                if (proj == null)
-                {
-                    string msg = "first open a project please !";
-                    if (ps.Status.Contains(msg))
-                        ps.Status = ps.Status + "!";
-                    else
-                        ps.Status = msg;
-                    return;
-                }
-                string folder = System.IO.Path.GetDirectoryName(proj.FullName);
+                //var proj = app.GetActiveProject();
+                //if (proj == null)
+                //{
+                //    string msg = "first open a project please !";
+                //    if (ps.Status.Contains(msg))
+                //        ps.Status = ps.Status + "!";
+                //    else
+                //        ps.Status = msg;
+                //    return;
+                //}
+                string folder = Database.Instance.WorkingDirectory;
                 folder = System.IO.Path.Combine(folder, c.Name.SafePath());
                 if (!Directory.Exists(folder))
                     Directory.CreateDirectory(folder);
 
-                foreach (ProjectItem pi in proj.ProjectItems)
-                    if (pi.Name == p.Name.SafePath())
-                        pi.Remove();
+                //foreach (ProjectItem pi in proj.ProjectItems)
+                //    if (pi.Name == p.Name.SafePath())
+                //        pi.Remove();
 
 
                 string extension = Database.Instance.language == "C#" ? ".cs" : ".cpp";
                 string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + extension);
-                StreamWriter sw = new StreamWriter(cpp, false);
-                WriteTemplate(sw);
-                sw.Close();
+                if (!File.Exists(cpp) || MessageBox.Show("Overwrite File?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+                {
+                    StreamWriter sw = new StreamWriter(cpp, false);
+                    WriteTemplate(sw);
+                    sw.Close();
 
-                proj.ProjectItems.AddFromFile(cpp).Open();
+                }
+
+                //proj.ProjectItems.AddFromFile(cpp).Open();
 
             });
 
@@ -544,6 +548,12 @@ int main(){
             set { db.Username = value; Notify("Username"); }
         }
 
+        public string WorkingDirectory
+        {
+            get { return db.WorkingDirectory; }
+            set { db.WorkingDirectory = value; Notify("WorkingDirectory"); }
+        }
+
         public string Password
         {
             get { return db.Password; }
@@ -552,7 +562,7 @@ int main(){
 
         public ComboBoxItem Language
         {
-            set { db.language = value.Content.ToString(); }
+            set { db.language = value?.Content.ToString(); }
         }
 
         public bool UseCredentials
@@ -649,7 +659,7 @@ int main(){
             List<string> inputs = page.ParseHtml(@"<div class=""title"">Input</div><pre>", "</pre>");
             List<string> outputs = page.ParseHtml(@"<div class=""title"">Output</div><pre>", "</pre>");
 
-            for (int i = 0, j = 0; i < titles.Count && j < inputs.Count; )
+            for (int i = 0, j = 0; i < titles.Count && j < inputs.Count;)
             {
                 Problem problem = new Problem();
                 problem.Name = titles[i].Trim();
@@ -707,7 +717,8 @@ int main(){
 
         public static Database Instance = new Database();
 
-        public string language = "C++";
+
+
 
         private Database()
         {
@@ -762,6 +773,21 @@ int main(){
             set { use_credentials = value; WriteToFile(); }
         }
 
+        private string workingDirectory = "C:\\";
+        public string WorkingDirectory
+        {
+            get { return workingDirectory; }
+            set { workingDirectory = value; WriteToFile(); }
+        }
+
+
+        public string language = "C++";
+        public string Language
+        {
+            get { return language; }
+            set { language = value; WriteToFile(); }
+        }
+
         public void ReadFromFile()
         {
             string file = System.IO.Path.Combine(path, "codeforces_add_in_db.amn");
@@ -777,6 +803,8 @@ int main(){
                     use_credentials = bool.Parse(reader.ReadLine());
                     username = reader.ReadLine();
                     password = reader.ReadLine();
+                    workingDirectory = reader.ReadLine();
+                    language = reader.ReadLine();
                     reader.Close();
                 }
                 catch (Exception e)
@@ -796,6 +824,7 @@ int main(){
             writer.WriteLine(use_credentials.ToString());
             writer.WriteLine(username.ToString());
             writer.WriteLine(password.ToString());
+            writer.WriteLine(language);
             writer.Close();
         }
 
@@ -831,7 +860,7 @@ int main(){
             List<string> fractions = new List<string>();
 
 
-            for (int i = 0; i < page.Length - begin.Length - end.Length - 1; )
+            for (int i = 0; i < page.Length - begin.Length - end.Length - 1;)
             {
                 int start_inx = page.IndexOf(begin, i);
                 if (start_inx != -1)
@@ -852,68 +881,71 @@ int main(){
             return fractions;
         }
 
-        public static Project GetActiveProject(this DTE2 dte)
+        public static Object GetActiveProject(this object dte)
         {
-            Project activeProject = null;
+            return null;
+            //Project activeProject = null;
 
-            Array activeSolutionProjects = dte.ActiveSolutionProjects as Array;
-            if (activeSolutionProjects != null && activeSolutionProjects.Length > 0)
-            {
-                activeProject = activeSolutionProjects.GetValue(0) as Project;
-            }
+            //Array activeSolutionProjects = dte.ActiveSolutionProjects as Array;
+            //if (activeSolutionProjects != null && activeSolutionProjects.Length > 0)
+            //{
+            //    activeProject = activeSolutionProjects.GetValue(0) as Project;
+            //}
 
-            return activeProject;
+            //return activeProject;
         }
 
-        public static void IncludeNewFiles(this DTE2 dte2)
+        public static void IncludeNewFiles(this object dte2)
         {
-            int count = 0;
-            List<string> newfiles;
+            //int count = 0;
+            //List<string> newfiles;
 
-            foreach (Project project in dte2.Solution.Projects)
-            {
+            //foreach (Project project in dte2.Solution.Projects)
+            //{
 
-                if (project.UniqueName.EndsWith(".csproj"))
-                {
-                    newfiles = GetFilesNotInProject(project);
+            //    if (project.UniqueName.EndsWith(".csproj"))
+            //    {
+            //        newfiles = GetFilesNotInProject(project);
 
-                    foreach (var file in newfiles)
-                        project.ProjectItems.AddFromFile(file);
+            //        foreach (var file in newfiles)
+            //            project.ProjectItems.AddFromFile(file);
 
-                    count += newfiles.Count;
-                }
-            }
-            dte2.StatusBar.Text = String.Format("{0} new file{1} included in the project.", count, (count == 1 ? "" : "s"));
+            //        count += newfiles.Count;
+            //    }
+            //}
+            //dte2.StatusBar.Text = String.Format("{0} new file{1} included in the project.", count, (count == 1 ? "" : "s"));
         }
 
-        public static List<string> GetAllProjectFiles(ProjectItems projectItems, string extension)
+        public static List<string> GetAllProjectFiles(object projectItems, string extension)
         {
-            List<string> returnValue = new List<string>();
+            return null;
+            //List<string> returnValue = new List<string>();
 
-            foreach (ProjectItem projectItem in projectItems)
-            {
-                for (short i = 1; i <= projectItems.Count; i++)
-                {
-                    string fileName = projectItem.FileNames[i];
-                    if (System.IO.Path.GetExtension(fileName).ToLower() == extension)
-                        returnValue.Add(fileName);
-                }
-                returnValue.AddRange(GetAllProjectFiles(projectItem.ProjectItems, extension));
-            }
+            //foreach (ProjectItem projectItem in projectItems)
+            //{
+            //    for (short i = 1; i <= projectItems.Count; i++)
+            //    {
+            //        string fileName = projectItem.FileNames[i];
+            //        if (System.IO.Path.GetExtension(fileName).ToLower() == extension)
+            //            returnValue.Add(fileName);
+            //    }
+            //    returnValue.AddRange(GetAllProjectFiles(projectItem.ProjectItems, extension));
+            //}
 
-            return returnValue;
+            //return returnValue;
         }
 
-        public static List<string> GetFilesNotInProject(Project project)
+        public static List<string> GetFilesNotInProject(object project)
         {
-            List<string> returnValue = new List<string>();
-            string startPath = System.IO.Path.GetDirectoryName(project.FullName);
-            List<string> projectFiles = GetAllProjectFiles(project.ProjectItems, ".cs");
+            return null;
+            //List<string> returnValue = new List<string>();
+            //string startPath = System.IO.Path.GetDirectoryName(project.FullName);
+            //List<string> projectFiles = GetAllProjectFiles(project.ProjectItems, ".cs");
 
-            foreach (var file in Directory.GetFiles(startPath, "*.cs", SearchOption.AllDirectories))
-                if (!projectFiles.Contains(file)) returnValue.Add(file);
+            //foreach (var file in Directory.GetFiles(startPath, "*.cs", SearchOption.AllDirectories))
+            //    if (!projectFiles.Contains(file)) returnValue.Add(file);
 
-            return returnValue;
+            //return returnValue;
         }
 
         public static string SafePath(this string path)
@@ -1012,6 +1044,4 @@ int main(){
             SetIsUpdating(passwordBox, false);
         }
     }
-
-
 }
