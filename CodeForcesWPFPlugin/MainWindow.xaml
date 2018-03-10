@@ -88,6 +88,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <DockPanel  Margin="0,3,0,0">
+                                <Button Width="60" DockPanel.Dock="Right"  Command="{Binding TestCommand}" Content="test !" Background="GreenYellow" ToolTip="Test with g++ 17!"  Margin="10,0,0,0"/>
                                 <Button Width="60" DockPanel.Dock="Right"  Command="{Binding GenerateCommand}" Content="generate !" Background="GreenYellow" ToolTip="be carefull generate will override the problem if it already exists !"  Margin="10,0,0,0"/>
                                 <Button Width="75" DockPanel.Dock="Right"  Command="{Binding ShowInBrowser}" Content="in browser !" Background="GreenYellow" ToolTip="it will launch the default browser for the problem"  Margin="10,0,0,0"/>
                                 <TextBlock MinWidth="160" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />

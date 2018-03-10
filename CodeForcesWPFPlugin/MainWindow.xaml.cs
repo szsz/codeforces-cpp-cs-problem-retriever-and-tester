@@ -191,6 +191,8 @@ namespace CodeForcesWPFPlugin
     {
         public Contest c;
         public Problem p;
+
+        static string extension { get { return Database.Instance.language == "C#" ? ".cs" : ".cpp"; } }
         public ProblemCdt(Problem problem, Contest contest)
         {
             p = problem;
@@ -220,7 +222,6 @@ namespace CodeForcesWPFPlugin
                 //        pi.Remove();
 
 
-                string extension = Database.Instance.language == "C#" ? ".cs" : ".cpp";
                 string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + extension);
                 if (!File.Exists(cpp) || MessageBox.Show("Overwrite File?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
                 {
@@ -260,6 +261,38 @@ namespace CodeForcesWPFPlugin
                 if (!exception_accured)
                     ProblemsViewModel.Instance.Status = p.Name + " launched in " + browser + " .";
             });
+
+
+            TestCommand = new IDelegateCommand((obj) =>
+            {
+                try
+                {
+                    string folder = Database.Instance.WorkingDirectory;
+                    folder = System.IO.Path.Combine(folder, c.Name.SafePath());
+                    string exe = System.IO.Path.Combine(folder, p.Name.SafePath() + ".exe");
+                    string log = System.IO.Path.Combine(folder, p.Name.SafePath() + ".compilelog");
+                    string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + extension);
+
+                    string cmd = $"/C g++.exe -Wl,--stack=268435456 -O2 -std=c++17 -o \"{exe}\" \"{cpp}\" 2>\"{log}\"";
+                    var proc = System.Diagnostics.Process.Start("cmd", cmd);
+                    proc.WaitForExit();
+                    var compilelog = File.ReadAllText(log);
+                    if (compilelog != string.Empty)
+                        MessageBox.Show(compilelog, "Compile Log");
+
+                    var psi = new System.Diagnostics.ProcessStartInfo(exe);
+                    psi.RedirectStandardOutput = true;
+                    psi.UseShellExecute = false;
+                    proc = System.Diagnostics.Process.Start(psi);
+                    proc.WaitForExit();
+                    MessageBox.Show(proc.StandardOutput.ReadToEnd(), "Run Results");
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.Message, "Exception");
+                }
+            });
+
         }
 
         public void WriteTemplate(StreamWriter sw)
@@ -411,6 +444,7 @@ int main(){
         public List<TestCase> TestCases { get { return p.TestCases; } }
 
         public IDelegateCommand GenerateCommand { get; set; }
+        public IDelegateCommand TestCommand { get; set; }
         public IDelegateCommand ShowInBrowser { get; set; }
     }
 
