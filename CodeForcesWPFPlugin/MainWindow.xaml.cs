@@ -713,7 +713,7 @@ int main(){
 
     public class Database
     {
-        public string path = System.IO.Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"Visual Studio 2012\Addins");
+        public string path = System.IO.Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"CodeForcesHelper");
 
         public static Database Instance = new Database();
 
@@ -824,6 +824,7 @@ int main(){
             writer.WriteLine(use_credentials.ToString());
             writer.WriteLine(username.ToString());
             writer.WriteLine(password.ToString());
+            writer.WriteLine(workingDirectory);
             writer.WriteLine(language);
             writer.Close();
         }
