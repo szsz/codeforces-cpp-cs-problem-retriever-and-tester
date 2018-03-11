@@ -270,22 +270,29 @@ namespace CodeForcesWPFPlugin
                     string folder = Database.Instance.WorkingDirectory;
                     folder = System.IO.Path.Combine(folder, c.Name.SafePath());
                     string exe = System.IO.Path.Combine(folder, p.Name.SafePath() + ".exe");
-                    string log = System.IO.Path.Combine(folder, p.Name.SafePath() + ".compilelog");
                     string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + extension);
 
-                    string cmd = $"/C g++.exe -Wl,--stack=268435456 -O2 -std=c++17 -o \"{exe}\" \"{cpp}\" 2>\"{log}\"";
-                    var proc = System.Diagnostics.Process.Start("cmd", cmd);
-                    proc.WaitForExit();
-                    var compilelog = File.ReadAllText(log);
-                    if (compilelog != string.Empty)
-                        MessageBox.Show(compilelog, "Compile Log");
+                    bool run = true;
+                    {
+                        string cmdarg = $"/C g++.exe -Wl,--stack=268435456 -O2 -std=c++17 -o \"{exe}\" \"{cpp}\"";
+                        var psi = new System.Diagnostics.ProcessStartInfo("cmd", cmdarg);
+                        psi.RedirectStandardOutput = true;
+                        psi.RedirectStandardError = true;
+                        psi.UseShellExecute = false;
+                        var proc = System.Diagnostics.Process.Start(psi);
+                        proc.WaitForExit();
+                        var compilelog = proc.StandardOutput.ReadToEnd().Replace(folder, ""); // remove useless information
+                        var compilelog2 = proc.StandardError.ReadToEnd().Replace(folder, "");
+                        if (compilelog != string.Empty || compilelog2 != string.Empty)
+                            run = MessageBox.Show(compilelog + "\r\n" + compilelog2 + "\r\n Would you like to try and run anyway?", "Compile Log", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.No;
+                    }
+                    if (run)
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo("cmd", $"/C \"{exe}\" & pause");
+                        psi.WorkingDirectory = folder;
+                        System.Diagnostics.Process.Start(psi);
+                    }
 
-                    var psi = new System.Diagnostics.ProcessStartInfo(exe);
-                    psi.RedirectStandardOutput = true;
-                    psi.UseShellExecute = false;
-                    proc = System.Diagnostics.Process.Start(psi);
-                    proc.WaitForExit();
-                    MessageBox.Show(proc.StandardOutput.ReadToEnd(), "Run Results");
                 }
                 catch (Exception e)
                 {
