@@ -223,7 +223,7 @@ namespace CodeForcesWPFPlugin
 
 
                 string cpp = System.IO.Path.Combine(folder, p.Name.SafePath() + extension);
-                if (!File.Exists(cpp) || MessageBox.Show("Overwrite File?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.No)
+                if (!File.Exists(cpp) || MessageBox.Show("Overwrite File?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                 {
                     StreamWriter sw = new StreamWriter(cpp, false);
                     WriteTemplate(sw);
@@ -382,6 +382,9 @@ public static void Main(string[] args){
                 for (int i = 0; i < p.TestCases.Count; ++i)
                 {
                     TestCase tc = p.TestCases[i];
+
+                    sw.WriteLine();
+                    sw.WriteLine($"\t// Test Case {i}:");
                     sw.WriteLine("Console.WriteLine(\"Test Case({0}) => expected :\");", i + 1);
                     sw.WriteLine("Console.WriteLine(\"{0}\");", tc.Output);
                     sw.WriteLine("Console.WriteLine(\"Test Case({0}) => found    :\");", i + 1);
@@ -415,14 +418,18 @@ int main(){
                 for (int i = 0; i < p.TestCases.Count; ++i)
                 {
                     TestCase tc = p.TestCases[i];
+
+                    sw.WriteLine();
+                    sw.WriteLine($"\t// Test Case {i}:");
                     sw.WriteLine("\tfin = fopen(\"in.txt\", \"w+\");");
                     sw.WriteLine("\tfprintf(fin, \"{0}\");", tc.Input);
                     sw.WriteLine("\tfclose(fin);");
                     sw.WriteLine("\tfreopen(\"in.txt\", \"r\", stdin);");
                     sw.WriteLine("\tprintf(\"test case({0}) => expected : \\n\");", i + 1);
                     sw.WriteLine("\tprintf(\"{0}\");", tc.Output);
-                    sw.WriteLine("\tprintf(\"test case({0}) => founded  : \\n\");", i + 1);
+                    sw.WriteLine("\tprintf(\"test case({0}) => found    : \\n\");", i + 1);
                     sw.WriteLine("\tprogram();");
+                    sw.WriteLine();
                 }
 
                 sw.WriteLine();
@@ -701,8 +708,8 @@ int main(){
                     if (titles[i] == "Input")
                     {
                         TestCase tc = new TestCase();
-                        tc.Input = inputs[j].Replace(@"<br />", @"\n");
-                        tc.Output = outputs[j].Replace(@"<br />", @"\n");
+                        tc.Input = "\\\r\n" + inputs[j].Replace(@"<br />", "\\n\\\r\n");
+                        tc.Output = "\\\r\n" + outputs[j].Replace(@"<br />", "\\n\\\r\n");
                         problem.TestCases.Add(tc);
 
                         ++j;
