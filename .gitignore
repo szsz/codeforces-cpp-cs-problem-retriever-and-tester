@@ -157,3 +157,8 @@ CodeForcesWPFPlugin/CodeForcesWPFPlugin.exe.config
 *.ide-wal
 *.ide
 *.lock
+
+#other
+
+*.dtbcache
+*.db

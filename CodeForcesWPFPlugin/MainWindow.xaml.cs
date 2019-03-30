@@ -395,7 +395,7 @@ public static void Main(string[] args){
                     sw.WriteLine("Console.WriteLine(\"Test Case({0}) => expected :\");", i + 1);
                     sw.WriteLine("Console.WriteLine(\"{0}\");", tc.Output.Replace("\n", "\\\n"));
                     sw.WriteLine("Console.WriteLine(\"Test Case({0}) => found    :\");", i + 1);
-                    sw.WriteLine("program(new StringReader(\"{0}\"));", tc.Input.Replace("\n", "\\\n"));
+                    sw.WriteLine("program(new StringReader(\"{0}\"));", tc.Input.Replace("\r", "").Replace("\\\n", "\n").Replace("\n\n", "\n").Replace("\n", "\\n\\\n").Replace("\\n\\n", "\\n"));
                     sw.WriteLine("Console.WriteLine();");
                     sw.WriteLine();
                 }
@@ -429,7 +429,7 @@ int main(){
                     sw.WriteLine();
                     sw.WriteLine($"\t// Test Case {i}:");
                     sw.WriteLine("\tfin = fopen(\"in.txt\", \"w+\");");
-                    sw.WriteLine("\tfprintf(fin, \"{0}\");", tc.Input.Replace("\n","\\\n"));
+                    sw.WriteLine("\tfprintf(fin, \"{0}\");", tc.Input.Replace("\r", "").Replace("\\\n","\n").Replace("\n\n", "\n").Replace("\n","\\n\\\n").Replace("\\n\\n", "\\n"));
                     sw.WriteLine("\tfclose(fin);");
                     sw.WriteLine("\tfreopen(\"in.txt\", \"r\", stdin);");
                     sw.WriteLine("\tprintf(\"test case({0}) => expected : \\n\");", i + 1);
